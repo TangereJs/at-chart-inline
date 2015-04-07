@@ -1,0 +1,148 @@
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../at-core-theme/at-core-theme.html">
+<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+
+<dom-module id="at-chart-inline">
+    <link rel="stylesheet" href="../c3/c3.css">
+    <link rel="import" type="css" href="../c3/c3.css">
+    <style>
+       :host {
+         position: relative;
+         display:  inline-block;
+       }
+        
+        #graph {
+           stroke: #1b70e0;
+           stroke-width: 2;
+           fill: none;
+           float:left;
+           line-height: inherit;
+        }
+    </style>
+    <template>
+        <at-core-theme></at-core-theme>
+        <span id="graph"></span>
+        <div id="dataContent" style="display:none">
+            <content></content>
+        </div>
+    </template>
+</dom-module>
+    <script>
+        Polymer({ 
+            is:'at-chart-inline',
+            
+            properties: {
+              charttype: {
+                  type: String,
+                  value: 'line', 
+                  reflect: true 
+              },
+              dataColumn: { 
+                  type: String,
+                  value: '', 
+                  reflect: true 
+              },
+              data: {
+                  type: Object,
+                  value: {}
+              }
+            },
+          
+            observers: {
+              'charttype data dataColumn': 'initialize'
+            },
+          
+            initialize: function() {
+                if(!this._afterReady){
+                    return;
+                }
+                
+                this.debounce('initInlineChart', function(){
+                    
+                    var dataColumnData =  this.data.columns[0].slice(1, this.data.columns[0].length);
+                    for(var i=0; i < this.data.columns.length; i++)
+                    {
+                        if(this.data.columns[i][0]== this.dataColumn){
+                            dataColumnData = this.data.columns[i].slice(1, this.data.columns[i].length);
+                        }
+                    }
+                    
+                    this.$.graph.style.height = window.getComputedStyle(this.$.graph, null).getPropertyValue("line-height");
+                    var graph = d3.select(this.$.graph).append("svg").attr("width", "100%").attr("height", "100%");
+                    
+                    
+//                    // X scale will fit values from 0-10 within pixels 0-100
+//                    var x = d3.scale.linear().domain([0, 10]).range([0, 50]);
+//                    // Y scale will fit values from 0-10 within pixels 0-100
+//                    var y = d3.scale.linear().domain([0, 10]).range([0, 30]);
+                    
+                    var x = d3.scale.linear().domain([0, 16]);
+                    var y = d3.scale.linear().domain([0, 16]);
+
+                    // create a line object that represents the SVN line we're creating
+                    var line = d3.svg.line()
+                        .x(function(d,i) { 
+                            return x(i); 
+                        }).y(function(d) {
+                            return y(d); 
+                        })
+
+                    // display the line by appending an svg:path element with the data line we created above
+                    graph.append("svg:path").attr("d", line(dataColumnData));
+                    
+                }, 10);
+            },
+            
+			ready: function() {
+		 
+				// exit if parent component is not running directly in designer
+				//if(!this.parentNode.id || !this.parentNode.id=="design_host") return;
+				
+				// get sample data 
+				var txt = this.shadowRoot? this.innerHTML.trim() : this.$.dataContent.innerHTML.trim();
+				
+                if(txt && this.isEmpty(this.data)){ //this.data has priority over data set as component inner html
+                    var json = null;
+
+                    try {
+                        json = JSON.parse(txt);
+                    }
+                    catch(err) {		
+                        var msg = document.createElement("div");
+                        msg.innerHTML = "<br>Error: " + err.message + "<br>";
+                        this.appendChild(msg);
+                    }
+
+                    if(json != null) {
+                        this.data = json.data;
+                    }            
+                }
+                
+                this._afterReady = true;
+                
+				this.initialize();
+			},
+
+            isEmpty: function (obj) {
+                var hasOwnProperty = Object.prototype.hasOwnProperty;
+                // null and undefined are "empty"
+                if (obj == null) return true;
+
+                // Assume if it has a length property with a non-zero value
+                // that that property is correct.
+                if (obj.length > 0)    return false;
+                if (obj.length === 0)  return true;
+
+                // Otherwise, does it have any properties of its own?
+                // Note that this doesn't handle
+                // toString and valueOf enumeration bugs in IE < 9
+                for (var key in obj) {
+                    if (hasOwnProperty.call(obj, key)) return false;
+                }
+
+                return true;
+            }
+        });
+
+    </script>
+</polymer-element>
