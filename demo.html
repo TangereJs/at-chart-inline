@@ -5,42 +5,50 @@
   <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
   <title>at-chart-inline Demo</title>
 
-  <script src="../webcomponentsjs/webcomponents.js"></script>
+  <script src="../webcomponentsjs/webcomponents-lite.js"></script>
   <link rel="import" href="at-chart-inline.html">
 
   <style>
+      #sparkline-container {
+        height: 50px;
+        width: 100%;
+      }
   </style>
 
 </head>
 
 <body>
-    <h2>Bar Chart</h2>
-    <p>Lorem ipsum dolor sit amet, 
-    <at-chart-inline charttype="bar" data-column="data2" id="at_chart_inline" data='{ "columns": [ ["data1", 100, 200, 150, 300, 200], ["data2", 400, 500, 250, 700, 300] ] }' ></at-chart-inline>
+  <h2>Bar Chart</h2>
+  <p>Lorem ipsum dolor sit amet,
+    <at-chart-inline chart-type="bar" data-column="data2" id="at_chart_inline" data='{ "columns": [ ["data1", 100, 200, 150, 300, 200], ["data2", 400, 500, 250, 700, 300] ] }'></at-chart-inline>
     consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
-    <br>
-    <at-chart-inline charttype="line" data-column="data2" id="at_chart_inline_bottom">{ 
-        "data": { "columns": [ ["data1", 100, 200, 150, 300, 200], ["data2", 400, 500, 250, 700, 300] ] } 
-        }
-    </at-chart-inline>
-    <br>
-    <select id="charttype">
-        <option value="bar" selected>bar</option>
-        <option value="line">line</option>
-    </select>
-    <script>
-        HTMLImports.whenReady(function() {
-            var atChartInline = document.getElementById("at_chart_inline");
-            
-            var charttype = document.getElementById("charttype");
-            
-            charttype.addEventListener("change", function(){
-                atChartInline.charttype = this.value;
-            });
-        });
-        
-        
-    </script>
+  <br>
+  <div id="sparkline-container">
+    <at-chart-inline chart-type="line" data-column="data1" id="at_chart_inline_bottom"></at-chart-inline>
+  </div>
+  <br>
+  <select id="charttype">
+    <option value="line" selected>line</option>
+    <option value="bar">bar</option>
+  </select>
+  <script>
+    document.addEventListener('WebComponentsReady', function() {
+      var atChartInline = document.getElementById("at_chart_inline_bottom");
+      atChartInline.data = {
+        "columns": [
+          ["data1", 100, 200, 150, 300, 200],
+          ["data2", 400, 500, 250, 700, 300]
+        ]
+      };
+      atChartInline.pixelsPerDataPoint = 10;
+
+      var charttype = document.getElementById("charttype");
+      charttype.value = atChartInline.chartType;
+      charttype.addEventListener("change", function() {
+        atChartInline.chartType = this.value;
+      });
+    });
+  </script>
 </body>
 
 </html>

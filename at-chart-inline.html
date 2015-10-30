@@ -1,148 +1,247 @@
 <link rel="import" href="../polymer/polymer.html">
 <link rel="import" href="../at-core-theme/at-core-theme.html">
-<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+<link rel="import" href="../d3-elements/d3-import.html">
 
 <dom-module id="at-chart-inline">
-    <link rel="stylesheet" href="../c3/c3.css">
-    <link rel="import" type="css" href="../c3/c3.css">
-    <style>
-       :host {
-         position: relative;
-         display:  inline-block;
-       }
-        
-        #graph {
-           stroke: #1b70e0;
-           stroke-width: 2;
-           fill: none;
-           float:left;
-           line-height: inherit;
-        }
-    </style>
-    <template>
-        <at-core-theme></at-core-theme>
-        <span id="graph"></span>
-        <div id="dataContent" style="display:none">
-            <content></content>
-        </div>
-    </template>
+  <link rel="stylesheet" href="../c3/c3.css">
+  <link rel="import" type="css" href="../c3/c3.css">
+  <style>
+    :host {
+      display: inline-block;
+    }
+
+    #graph {
+      stroke: #1b70e0;
+      stroke-width: 2;
+      fill: none;
+      line-height: inherit;
+    }
+  </style>
+  <template>
+    <!-- <at-core-theme></at-core-theme> -->
+    <span id="graph"></span>
+  </template>
 </dom-module>
-    <script>
-        Polymer({ 
-            is:'at-chart-inline',
-            
-            properties: {
-              charttype: {
-                  type: String,
-                  value: 'line', 
-                  reflect: true 
-              },
-              dataColumn: { 
-                  type: String,
-                  value: '', 
-                  reflect: true 
-              },
-              data: {
-                  type: Object,
-                  value: {}
-              }
-            },
-          
-            observers: {
-              'charttype data dataColumn': 'initialize'
-            },
-          
-            initialize: function() {
-                if(!this._afterReady){
-                    return;
-                }
-                
-                this.debounce('initInlineChart', function(){
-                    
-                    var dataColumnData =  this.data.columns[0].slice(1, this.data.columns[0].length);
-                    for(var i=0; i < this.data.columns.length; i++)
-                    {
-                        if(this.data.columns[i][0]== this.dataColumn){
-                            dataColumnData = this.data.columns[i].slice(1, this.data.columns[i].length);
-                        }
-                    }
-                    
-                    this.$.graph.style.height = window.getComputedStyle(this.$.graph, null).getPropertyValue("line-height");
-                    var graph = d3.select(this.$.graph).append("svg").attr("width", "100%").attr("height", "100%");
-                    
-                    
-//                    // X scale will fit values from 0-10 within pixels 0-100
-//                    var x = d3.scale.linear().domain([0, 10]).range([0, 50]);
-//                    // Y scale will fit values from 0-10 within pixels 0-100
-//                    var y = d3.scale.linear().domain([0, 10]).range([0, 30]);
-                    
-                    var x = d3.scale.linear().domain([0, 16]);
-                    var y = d3.scale.linear().domain([0, 16]);
+<script>
+  Polymer({
+    is: 'at-chart-inline',
 
-                    // create a line object that represents the SVN line we're creating
-                    var line = d3.svg.line()
-                        .x(function(d,i) { 
-                            return x(i); 
-                        }).y(function(d) {
-                            return y(d); 
-                        })
+    properties: {
+      chartType: {
+        type: String,
+        value: 'line',
+        observer: 'chartTypeChanged'
+      },
+      dataColumn: {
+        type: String,
+        value: '',
+        observer: 'dataColumnChanged'
+      },
+      data: {
+        type: Object,
+        value: function() {
+          return {};
+        },
+        observer: 'dataChanged'
+      },
+      pixelsPerDataPoint: {
+        type: Number,
+        value: 5,
+        observer: 'pixelsPerDataPointChanged'
+      }
+    },
 
-                    // display the line by appending an svg:path element with the data line we created above
-                    graph.append("svg:path").attr("d", line(dataColumnData));
-                    
-                }, 10);
-            },
-            
-			ready: function() {
-		 
-				// exit if parent component is not running directly in designer
-				//if(!this.parentNode.id || !this.parentNode.id=="design_host") return;
-				
-				// get sample data 
-				var txt = this.shadowRoot? this.innerHTML.trim() : this.$.dataContent.innerHTML.trim();
-				
-                if(txt && this.isEmpty(this.data)){ //this.data has priority over data set as component inner html
-                    var json = null;
+    listeners: {
+      'charttype data dataColumn': 'initialize'
+    },
+    _isAttached: false,
+    _scopeCssViaAttr: true,
+    _supported_chart_types: ["line", "bar"],
+    attached: function() {
+      this._isAttached = true;
+      this.initialize();
+    },
+    chartTypeChanged: function(newValue, oldValue) {
+      if (!this._isAttached) {
+        return;
+      }
+      this.initialize();
+    },
+    dataColumnChanged: function(newValue, oldValue) {
+      if (!this._isAttached) {
+        return;
+      }
+      this.initialize();
+    },
+    dataChanged: function(newValue, oldValue) {
+      if (!this._isAttached) {
+        return;
+      }
+      this.initialize();
+    },
+    pixelsPerDataPointChanged: function(newValue, oldValue) {
+      if (!this._isAttached) {
+        return;
+      }
+      this.initialize();
+    },
+    initialize: function() {
+      var
+        self = this,
+        chartType = "line",
+        dataColumnExists = false,
+        selectedColumnName,
+        selectedColumnData,
+        columns,
+        column,
+        columnIndex,
+        columnLength;
 
-                    try {
-                        json = JSON.parse(txt);
-                    }
-                    catch(err) {		
-                        var msg = document.createElement("div");
-                        msg.innerHTML = "<br>Error: " + err.message + "<br>";
-                        this.appendChild(msg);
-                    }
+      if (!this._isAttached) {
+        return;
+      }
+      Polymer.dom(this.$.graph).innerHTML = '';
 
-                    if(json != null) {
-                        this.data = json.data;
-                    }            
-                }
-                
-                this._afterReady = true;
-                
-				this.initialize();
-			},
+      // ------------------------------
+      // validate the inputs
+      // ------------------------------
+      columns = this.data.columns;
 
-            isEmpty: function (obj) {
-                var hasOwnProperty = Object.prototype.hasOwnProperty;
-                // null and undefined are "empty"
-                if (obj == null) return true;
+      if (!columns) {
+        console.log("Data property doens't contain columns property");
+        return;
+      }
+      if (!this._isArray(columns)) {
+        console.log("Columns property of data is not an array");
+        return;
+      }
 
-                // Assume if it has a length property with a non-zero value
-                // that that property is correct.
-                if (obj.length > 0)    return false;
-                if (obj.length === 0)  return true;
+      if (columns.length === 0) {
+        console.log("Columns property of data has zero columns. Columns property must have at least one column.");
+        return;
+      }
 
-                // Otherwise, does it have any properties of its own?
-                // Note that this doesn't handle
-                // toString and valueOf enumeration bugs in IE < 9
-                for (var key in obj) {
-                    if (hasOwnProperty.call(obj, key)) return false;
-                }
+      column = columns[0];
+      if (this._isArray(column)) {
+        selectedColumnName = column[0];
+        selectedColumnData = column.slice(1, column.length);
+      } else {
+        console.log("Column " + JSON.stringify(column, null, ' ') + " is not an array. Skipping ...");
+      }
 
-                return true;
-            }
-        });
+      for (columnIndex = 1; columnIndex < columnLength; columnIndex += 1) {
+        column = columns[columnIndex];
+        if (!self._isArray(column)) {
+          console.log("Column " + JSON.stringify(column, null, ' ') + " is not an array. Skipping ...");
+        } else {
+          dataColumnExists = column[0] === this.dataColumn;
+          if (dataColumnExists) {
+            selectedColumnName = column[0];
+            selectedColumnData = column.slice(1, column.length);
+            break;
+          }
+        }
+      }
+      dataColumnExists = dataColumnExists || this.dataColumn === selectedColumnName;
 
-    </script>
-</polymer-element>
+      if (!dataColumnExists) {
+        console.log("data.columns property doesn't contain " + this.dataColumn + " column.");
+        console.log("Using " + selectedColumnName + " column as default.");
+      }
+
+      if (this._supported_chart_types.indexOf(this.chartType) === -1) {
+        console.log('Chart type ' + this.chartType + ' is not supported.');
+        console.log('Supported chart types are ' + JSON.stringify(this._supported_chart_types, null, ' '));
+        console.log('Using chart type ' + chartType + ' as default.');
+      } else {
+        chartType = this.chartType;
+      }
+
+      var parentStyle = window.getComputedStyle(this.parentElement);
+      var parentHeightInPx = parentStyle.getPropertyValue('height');
+      var parentHeight = parseInt(parentHeightInPx.replace('px', ''));
+
+      var graphComputedStyle = window.getComputedStyle(this.$.graph);
+      var strokeWidth = graphComputedStyle.getPropertyValue('stroke-width');
+      strokeWidth = parseInt(strokeWidth.replace('px', ''));
+
+      if (chartType === "line") {
+        // ------------------------------
+        // create the graph
+        // ------------------------------
+        this.$.graph.style.height = parentHeightInPx; //computedStyle.getPropertyValue("line-height");
+
+        var
+          width = (selectedColumnData.length * this.pixelsPerDataPoint),
+          widthInPx = width + 'px';
+
+        // var computedStyle = window.getComputedStyle(this.$.graph);
+        // this.$.graph.style.height = computedStyle.getPropertyValue("line-height");
+        var graph = d3.select(this.$.graph)
+          .append("svg")
+          .attr('style-scope', 'at-chart-inline')
+          .attr("width", widthInPx)
+          .attr("height", parentHeightInPx);
+
+        var x = d3.scale.linear()
+          .domain([0, selectedColumnData.length - 1]) // domain says how many data points we have
+          .range([0, width]); // range say how many pixels in width we have available for drawing the data points
+        var y = d3.scale.linear()
+          .domain([0, d3.max(selectedColumnData)]) // domain says what is the minimum and maximum data value we want to plot
+          .range([parentHeight, 0]); // range say how many pixels in height we have available for drawing the data points
+        // use 0, parentHeight to place 0,0 in top,left
+        // use parentHeight, 0 to place 0,0 in bottom,left
+
+        // create a line object that represents the SVN line we're creating
+        var line = d3.svg.line()
+          .x(function(d, i) {
+            // console.log('Plotting X value for data point: ' + d + ' using index: ' + i + ' to be at: ' + x(i) + ' using our xScale.');
+            return x(i);
+          }).y(function(d) {
+            // console.log('Plotting Y value for data point: ' + d + ' to be at: ' + y(d) + " using our yScale.");
+            return y(d);
+          })
+
+        // display the line by appending an svg:path element with the data line we created above
+        graph.append("svg:path").attr("d", line(selectedColumnData));
+      } else if (chartType === "bar") {
+
+        var width = parentHeight;
+        var height = parentHeight;
+        var radius = (height-strokeWidth) / 2;
+
+        var color = d3.scale.category20b();
+
+        var svg = d3.select(this.$.graph)
+          .append('svg')
+          .attr('width', width)
+          .attr('height', height)
+          .append('g')
+          .attr('transform', 'translate(' + (width / 2) + ',' + (height / 2) + ')');
+
+        var arc = d3.svg.arc()
+          .outerRadius(radius);
+
+        var pie = d3.layout.pie()
+          .value(function(d) {
+            return d;
+          })
+          .sort(null);
+
+        var path = svg.selectAll('path')
+          .data(pie(selectedColumnData))
+          .enter()
+          .append('path')
+          .attr('d', arc)
+          .attr('fill', function(d, i) {
+            return color(d.data);
+          });
+
+      }
+    },
+
+    _isArray: function(obj) {
+      return Object.prototype.toString.apply(obj) === "[object Array]";
+    }
+  });
+</script>
