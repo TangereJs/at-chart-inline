@@ -11,7 +11,7 @@
     }
 
     #graph {
-      stroke: #1b70e0;
+      stroke: #000000;
       stroke-width: 2;
       fill: none;
       line-height: inherit;
@@ -23,6 +23,7 @@
   </template>
 </dom-module>
 <script>
+  'use strict';
   Polymer({
     is: 'at-chart-inline',
 
@@ -48,15 +49,38 @@
         type: Number,
         value: 5,
         observer: 'pixelsPerDataPointChanged'
+      },
+      /**
+       * @property colorScheme
+       * selects a color scheme to be used
+       * valid values are category10, category20, category20b, category20c, google10c and google20c
+       */
+      colorScheme: {
+        type: String,
+        value: 'category10'
       }
     },
 
     listeners: {
-      'charttype data dataColumn': 'initialize'
+      'charttype data dataColumn colorScheme': 'initialize'
     },
     _isAttached: false,
     _scopeCssViaAttr: true,
     _supported_chart_types: ["line", "bar"],
+    _supported_color_schemes: {
+      category10: d3.scale.category10(),
+      category20: d3.scale.category20(),
+      category20b: d3.scale.category20b(),
+      category20c: d3.scale.category20c(),
+      google10c: function(n) {
+        var colors_g = ["#3366cc", "#dc3912", "#ff9900", "#109618", "#990099", "#0099c6", "#dd4477", "#66aa00", "#b82e2e", "#316395", "#994499", "#22aa99", "#aaaa11", "#6633cc", "#e67300", "#8b0707", "#651067", "#329262", "#5574a6", "#3b3eac"];
+        return colors_g[n % colors_g.length];
+      },
+      google20c: function(n) {
+        var colors_g = ["#3366cc", "#dc3912", "#ff9900", "#109618", "#990099", "#0099c6", "#dd4477", "#66aa00", "#b82e2e", "#316395", "#994499", "#22aa99", "#aaaa11", "#6633cc", "#e67300", "#8b0707", "#651067", "#329262", "#5574a6", "#3b3eac"];
+        return colors_g[n % colors_g.length];
+      }
+    },
     attached: function() {
       this._isAttached = true;
       this.initialize();
@@ -169,7 +193,10 @@
         // ------------------------------
         // create the graph
         // ------------------------------
-        this.$.graph.style.height = parentHeightInPx; //computedStyle.getPropertyValue("line-height");
+        var graph = this.$.graph;
+        var colorScheme = this._getColorScheme();
+        graph.style.height = parentHeightInPx; //computedStyle.getPropertyValue("line-height");
+        graph.style.stroke = colorScheme(0);
 
         var
           width = (selectedColumnData.length * this.pixelsPerDataPoint),
@@ -177,7 +204,7 @@
 
         // var computedStyle = window.getComputedStyle(this.$.graph);
         // this.$.graph.style.height = computedStyle.getPropertyValue("line-height");
-        var graph = d3.select(this.$.graph)
+        var graph = d3.select(graph)
           .append("svg")
           .attr('style-scope', 'at-chart-inline')
           .attr("width", widthInPx)
@@ -208,9 +235,9 @@
 
         var width = parentHeight;
         var height = parentHeight;
-        var radius = (height-strokeWidth) / 2;
+        var radius = (height - strokeWidth) / 2;
 
-        var color = d3.scale.category20b();
+        var color = this._getColorScheme();
 
         var svg = d3.select(this.$.graph)
           .append('svg')
@@ -239,7 +266,20 @@
 
       }
     },
+    _getColorScheme: function() {
+      var schemeName = this.colorScheme;
+      var result = function(index) {
+        return "#000000";
+      };
 
+      var supportedColorSchemes = Object.keys(this._supported_color_schemes);
+      if (supportedColorSchemes.indexOf(schemeName) !== -1) {
+        result = this._supported_color_schemes[schemeName];
+      } else {
+        console.log("Color scheme " + schemeName + " is not supported. Supported color schemes are " + JSON.stringify(supportedColorSchemes));
+      }
+      return result;
+    },
     _isArray: function(obj) {
       return Object.prototype.toString.apply(obj) === "[object Array]";
     }
