@@ -41,14 +41,19 @@
       data: {
         type: Object,
         value: function() {
-          return {};
+          return {
+            columns: [
+              ["demo", 1, 2, 3, 4, 5]
+            ]
+          };
         },
         observer: 'dataChanged'
       },
       pixelsPerDataPoint: {
         type: Number,
         value: 5,
-        observer: 'pixelsPerDataPointChanged'
+        observer: 'pixelsPerDataPointChanged',
+        title: 'Pixels per data point'
       },
       /**
        * @property colorScheme
@@ -58,6 +63,7 @@
       colorScheme: {
         type: String,
         value: 'category10',
+        title: 'Color scheme',
         xtype: 'enum',
         xvaluelist: 'category10,category20,category20b,category20c,google10c,google20c'
       }
