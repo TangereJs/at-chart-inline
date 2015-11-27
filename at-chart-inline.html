@@ -31,7 +31,10 @@
       chartType: {
         type: String,
         value: 'line',
-        observer: 'chartTypeChanged'
+        observer: 'chartTypeChanged',
+        title: 'Chart type',
+        xtype: 'enum',
+        xvaluelist: 'line,bar'
       },
       dataColumn: {
         type: String,
@@ -47,7 +50,8 @@
             ]
           };
         },
-        observer: 'dataChanged'
+        observer: 'dataChanged',
+        xtype: 'json'
       },
       pixelsPerDataPoint: {
         type: Number,
@@ -64,13 +68,10 @@
         type: String,
         value: 'category10',
         title: 'Color scheme',
+        observer: 'colorSchemeChanged',
         xtype: 'enum',
         xvaluelist: 'category10,category20,category20b,category20c,google10c,google20c'
       }
-    },
-
-    listeners: {
-      'charttype data dataColumn colorScheme': 'initialize'
     },
     _isAttached: false,
     _scopeCssViaAttr: true,
@@ -105,8 +106,20 @@
       }
       this.initialize();
     },
+    colorSchemeChanged: function(newValue, oldValue) {
+      if (!this._isAttached) {
+        return;
+      }
+      this.initialize();
+    },
     dataChanged: function(newValue, oldValue) {
       if (!this._isAttached) {
+        return;
+      }
+      if (Object.prototype.toString.call(newValue) === "[object String]") {
+        try {
+          this.data = JSON.parse(newValue);
+        } catch (e) {}
         return;
       }
       this.initialize();
