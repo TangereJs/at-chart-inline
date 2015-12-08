@@ -34,7 +34,13 @@
         observer: 'chartTypeChanged',
         title: 'Chart type',
         xtype: 'enum',
-        xvaluelist: 'line,bar'
+        xvaluelist: [{
+          title: "Line",
+          value: "line"
+        }, {
+          title: "Pie",
+          value: "bar"
+        }]
       },
       dataColumn: {
         type: String,
