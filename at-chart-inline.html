@@ -39,7 +39,7 @@
           value: "line"
         }, {
           title: "Pie",
-          value: "bar"
+          value: "pie"
         }]
       },
       dataColumn: {
@@ -80,7 +80,7 @@
     },
     _isAttached: false,
     _scopeCssViaAttr: true,
-    _supported_chart_types: ["line", "bar"],
+    _supported_chart_types: ["line", "pie"],
     _supported_color_schemes: {
       category10: d3.scale.category10(),
       category20: d3.scale.category20(),
@@ -257,7 +257,7 @@
 
         // display the line by appending an svg:path element with the data line we created above
         graph.append("svg:path").attr("d", line(selectedColumnData));
-      } else if (chartType === "bar") {
+      } else if (chartType === "pie") {
 
         var width = parentHeight;
         var height = parentHeight;
