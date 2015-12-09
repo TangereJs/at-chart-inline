@@ -52,7 +52,7 @@
         value: function() {
           return {
             columns: [
-              ["demo", 1, 2, 3, 4, 5]
+              ["demo", 1, 2, 3, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5]
             ]
           };
         },
@@ -252,7 +252,7 @@
             return x(i);
           }).y(function(d) {
             // console.log('Plotting Y value for data point: ' + d + ' to be at: ' + y(d) + " using our yScale.");
-            return y(d);
+            return y(d)+strokeWidth;
           })
 
         // display the line by appending an svg:path element with the data line we created above
