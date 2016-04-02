@@ -1,8 +1,9 @@
 <link rel="import" href="../polymer/polymer.html">
-<link rel="import" href="../at-core-theme/at-core-theme.html">
+<link rel="import" href="../at-theme/at-theme.html">
 <link rel="import" href="../d3-elements/d3-import.html">
 
 <dom-module id="at-chart-inline">
+  <template>
   <link rel="stylesheet" href="../c3/c3.css">
   <link rel="import" type="css" href="../c3/c3.css">
   <style>
@@ -16,9 +17,11 @@
       fill: none;
       line-height: inherit;
     }
+
+    #graph.hidden {
+      display: none;
+    }
   </style>
-  <template>
-    <!-- <at-core-theme></at-core-theme> -->
     <span id="graph"></span>
   </template>
 </dom-module>
@@ -76,10 +79,15 @@
         observer: 'colorSchemeChanged',
         xtype: 'enum',
         xvaluelist: 'category10,category20,category20b,category20c,google10c,google20c'
+      },
+      hide: {
+        type: Boolean,
+        value: false,
+        observer: 'hideChanged',
+        title: 'Field is invisible'
       }
     },
     _isAttached: false,
-    _scopeCssViaAttr: true,
     _supported_chart_types: ["line", "pie"],
     _supported_color_schemes: {
       category10: d3.scale.category10(),
@@ -133,6 +141,10 @@
       if (!this._isAttached) {
         return;
       }
+      this.initialize();
+    },
+    hideChanged: function (newValue, oldValue) {
+      this.toggleClass('hidden', newValue, this.$.graph);
       this.initialize();
     },
     initialize: function() {
