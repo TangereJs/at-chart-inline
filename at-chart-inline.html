@@ -208,7 +208,9 @@
       }
 
       var parentStyle = window.getComputedStyle(this.parentElement);
-      var parentHeightInPx = parentStyle.getPropertyValue('height');
+      var parentBoundingRect = this.parentElement.getBoundingClientRect();
+      // var parentHeightInPx = parentStyle.getPropertyValue('height');
+      var parentHeightInPx = parentBoundingRect.height + 'px';
       var parentHeight = parseInt(parentHeightInPx.replace('px', ''));
 
       var graphComputedStyle = window.getComputedStyle(this.$.graph);
